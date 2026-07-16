@@ -12,10 +12,10 @@ load_dotenv()
 BOT_TOKEN: str = os.getenv("BOT_TOKEN")
 
 # Comma-separated list of admin Telegram user IDs, e.g. "123456789,987654321"
-_admin_ids_raw = os.getenv("ADMIN_IDS","")
-ADMIN_IDS: list[int] = [
-    int(x.strip()) for x in _admin_ids_raw.split(",") if x.strip().isdigit()
-]
+_admin_ids_raw = os.getenv("ADMIN_IDS")
+#ADMIN_IDS: list[int] = [
+#   int(x.strip()) for x in _admin_ids_raw.split(",") if x.strip().isdigit()
+#]
 
 # --- Database -----------------------------------------------------------
 # Local default: SQLite file (zero setup, great for development/testing).
