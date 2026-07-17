@@ -23,7 +23,7 @@ def _require(name: str) -> str:
 
 
 # --- Telegram ---------------------------------------------------------
-BOT_TOKEN: str = _require("BOT_TOKEN", "8829138453:AAHs_3LbbtASNXsr_9oV4cWZPXTYwXScGB4")
+BOT_TOKEN: str = _require("BOT_TOKEN")
 
 # Comma-separated list of admin Telegram user IDs, e.g. "123456789,987654321"
 _admin_ids_raw = os.getenv("ADMIN_IDS", "1678659382")
@@ -35,7 +35,7 @@ ADMIN_IDS: list[int] = [
 
 # --- Database -----------------------------------------------------------
 # Local default: SQLite file (zero setup, great for development/testing).
-# Production: point this at a PostgreSQL instance (Neon, Supabase, Render, ...).
+# Production: point this at a PostgreSQL instance (Neon, Supabase, Render, ...)
 #
 # Accepts the plain connection string your provider gives you, e.g.:
 #   postgresql://user:pass@host/dbname?sslmode=require&channel_binding=require
@@ -73,3 +73,4 @@ CLEANUP_INTERVAL_HOURS: int = int(os.getenv("CLEANUP_INTERVAL_HOURS", "24"))
 
 # Links shown in the customer menu — edit these for your real business.
 WEBSITE_URL: str = os.getenv("WEBSITE_URL", "https://example.com")
+
