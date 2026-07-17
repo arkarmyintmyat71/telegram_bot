@@ -3,6 +3,7 @@ Database engine/session setup (SQLAlchemy 2.0, async).
 Works with SQLite (local dev) or PostgreSQL (production) via DATABASE_URL.
 """
 
+import ssl
 from contextlib import asynccontextmanager
 
 from sqlalchemy.ext.asyncio import (
@@ -11,10 +12,19 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from config import DATABASE_URL
+from config import DATABASE_URL, IS_POSTGRES
 from models import Base
 
-engine = create_async_engine(DATABASE_URL, echo=False, future=True)
+# asyncpg needs SSL configured via connect_args rather than a `sslmode=`
+# query param (see config.py for why that param gets stripped). Neon requires
+# an encrypted connection, so enable it here whenever we're talking Postgres.
+_connect_args = {}
+if IS_POSTGRES:
+    _connect_args["ssl"] = ssl.create_default_context()
+
+engine = create_async_engine(
+    DATABASE_URL, echo=False, future=True, connect_args=_connect_args
+)
 
 SessionLocal = async_sessionmaker(
     bind=engine,
