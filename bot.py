@@ -1,10 +1,3 @@
-"""
-Telegram Support Bot — entry point.
-
-Run locally:      python bot.py
-Deploy:            see README.md (Render / Railway)
-"""
-
 import asyncio
 import logging
 

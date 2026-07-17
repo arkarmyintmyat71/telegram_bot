@@ -18,34 +18,39 @@ async def cmd_start(message: Message) -> None:
     await get_or_create_user(user.id, user.username, user.first_name)
 
     await message.answer(
-        f"👋 Welcome, {user.first_name or 'there'}!\n\n"
-        "I'm here to help. Choose an option below, or just type your question "
-        "and an admin will get back to you.",
+        f"👋 မင်္ဂလာပါ။, {user.first_name or 'there'}!\n\n"
+        "CV Myanmar မှကူညီပေးရန် အသင့်ရှိပါတယ်။"
+
+        "အောက်မှာရှိတဲ့ ရွေးချယ်စရာများထဲမှ တစ်ခုကို ရွေးချယ်နိုင်ပါတယ်၊"
+        "သို့မဟုတ် သင့်မေးခွန်းကို တိုက်ရိုက်ရိုက်ပို့နိုင်ပါတယ်။"
+
+        "တာဝန်ခံ Admin တစ်ဦးက အမြန်ဆုံး ပြန်လည်ဖြေကြားပေးပါမည်။",
         reply_markup=main_reply_keyboard(),
     )
-    await message.answer("What would you like to do?", reply_markup=main_inline_menu())
+    await message.answer("ဘာများအလိုရှိပါသလဲခင်ဗျာ။", reply_markup=main_inline_menu())
 
 
 @router.message(Command("help"))
 async def cmd_help(message: Message) -> None:
     await message.answer(
-        "Available commands:\n"
-        "/start — show the welcome menu\n"
-        "/help — show this message\n"
-        "/menu — show the menu again\n"
-        "/contact — get in touch with an admin\n\n"
-        "You can also just type your question directly — I'll try to answer it, "
-        "and if I can't, an admin will."
+        "📋 <b>အသုံးပြုနိုင်သော command များ</b>\n"
+        "/start — Welcome menu ကို ပြပါမည်\n"
+        "/help — ဒီစာကို ပြပါမည်\n"
+        "/menu — Menu ကို ထပ်ပြပါမည်\n"
+        "/contact — Admin နှင့် ဆက်သွယ်ရန်\n\n"
+        "📝 CV ရေးသားရန်၊ 🎫 လက်မှတ် (ရထား/ဘတ်စ်ကား) ဝယ်ယူရန်၊ 🎓 တက္ကသိုလ်ဝင်တန်း ရလဒ် စစ်ဆေးရန် — "
+        "အောက်ကမီနူးထဲက ရွေးချယ်နိုင်ပါတယ်၊ သို့မဟုတ် သင့်မေးခွန်းကို တိုက်ရိုက်ရိုက်ပို့လိုက်ရုံနဲ့ ရပါတယ်။ "
+        "Admin က အမြန်ဆုံး ပြန်လည်ဆက်သွယ်ပေးပါမယ်။"
     )
 
 
 @router.message(Command("menu"))
 async def cmd_menu(message: Message) -> None:
-    await message.answer("Here's the menu:", reply_markup=main_inline_menu())
+    await message.answer("အောက်မှာ Menu ကို ရွေးချယ်နိုင်ပါတယ်။", reply_markup=main_inline_menu())
 
 
 @router.message(Command("contact"))
 async def cmd_contact(message: Message) -> None:
     await message.answer(
-        "✉️ Just type your message here and an admin will reply as soon as possible."
+        "✉️ သင့်မေးခွန်း သို့မဟုတ် မက်ဆေ့ချ်ကို ဒီမှာ တိုက်ရိုက်ရိုက်ပို့နိုင်ပါတယ်။ Admin က အမြန်ဆုံး ပြန်လည်ကူညီဖြေကြားပေးပါမယ်။"
     )

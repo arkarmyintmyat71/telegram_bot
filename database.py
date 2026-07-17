@@ -15,9 +15,6 @@ from sqlalchemy.ext.asyncio import (
 from config import DATABASE_URL, IS_POSTGRES
 from models import Base
 
-# asyncpg needs SSL configured via connect_args rather than a `sslmode=`
-# query param (see config.py for why that param gets stripped). Neon requires
-# an encrypted connection, so enable it here whenever we're talking Postgres.
 _connect_args = {}
 if IS_POSTGRES:
     _connect_args["ssl"] = ssl.create_default_context()

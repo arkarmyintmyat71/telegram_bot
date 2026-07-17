@@ -9,6 +9,7 @@ Core business logic:
 
 import datetime as dt
 import logging
+import re
 
 from aiogram import Bot
 from sqlalchemy import delete, func, select
@@ -19,11 +20,7 @@ from models import FAQ, BroadcastLog, ForwardMap, Message, User
 
 logger = logging.getLogger(__name__)
 
-
-# ---------------------------------------------------------------------------
 # Users
-# ---------------------------------------------------------------------------
-
 async def get_or_create_user(telegram_id: int, username: str | None, first_name: str | None) -> User:
     async with get_session() as session:
         result = await session.execute(select(User).where(User.telegram_id == telegram_id))
@@ -74,15 +71,113 @@ async def get_stats() -> dict:
             "total_messages": total_messages,
         }
 
-
-# ---------------------------------------------------------------------------
 # FAQ
-# ---------------------------------------------------------------------------
-
 DEFAULT_FAQS = [
-    ("How do I place an order?", "Tap 'Order' in the menu, or just tell us what you'd like!"),
-    ("What are your business hours?", "We're available 9am - 6pm, Monday to Saturday."),
-    ("How can I contact a human?", "Tap 'Contact Us' or just type your question — an admin will reply shortly."),
+    # --- CV ရေးသားခြင်း ဝန်ဆောင်မှု ---
+    (
+        "📝 [CV] CV တစ်စောင် ဘယ်လောက်ကျပါသလဲ။",
+        "CV တစ်စောင်ကို ၁၀,၀၀၀ ကျပ်သာ ကျသင့်ပါသည်။",
+    ),
+    (
+        "📝 [CV] ဘယ်လောက်ကြာရင် CV ရရှိမလဲ။",
+        "Service အပ်ပြီးနောက် ၂၄ နာရီအတွင်း ရရှိပါမည်။",
+    ),
+    (
+        "📝 [CV] မြန်မာလိုရလား၊ English လိုရလား။",
+        "မြန်မာလိုနှင့် English လို နှစ်မျိုးလုံး ရေးသားပေးပါသည်။",
+    ),
+    (
+        "📝 [CV] Work Experience မရှိလည်း ရေးလို့ရလား။",
+        "Work Experience မရှိသေးလည်း စိတ်ပူစရာမလိုပါ၊ သေချာစွာ ရေးသားပေးပါသည်။",
+    ),
+    (
+        "📝 [CV] CV အတွက် ဘာအချက်အလက်တွေ ထပ်ပေးရမလဲ။",
+        "အောက်ပါအချက်အလက်များကို ပေးပို့ပေးပါ —\n"
+        "• ဖုန်းနံပါတ် / Gmail / လိပ်စာ\n"
+        "• အလုပ်အတွေ့အကြုံ / တက်ရောက်ခဲ့သော သင်တန်းများ (ရှိပါက)",
+    ),
+    (
+        "📝 [CV] ပြင်ဆင်ချင်ရင် အခမဲ့ ပြန်ပြင်ပေးလား။",
+        "ပြင်ဆင်ပေးပါသည်၊ အခမဲ့ ပြန်လည်ပြင်ဆင်ပေးပါသည်။",
+    ),
+    (
+        "📝 [CV] PDF နဲ့ ပေးလား။",
+        "PDF / PNG / JPG format များနှင့် ပေးပို့ပေးပါသည်။",
+    ),
+    (
+        "📝 [CV] နိုင်ငံခြားအလုပ်အတွက် CV ရေးပေးလား။",
+        "ရေးပေးပါသည်။",
+    ),
+    (
+        "📝 [CV] Payment ကို ဘယ်လိုပေးရမလဲ။",
+        "CV အပြီးရရှိပြီးမှသာ KBZPay / Wave — 09956413316 သို့ လွှဲပေးရပါသည်။",
+    ),
+    # --- ရထားလက်မှတ် ဝန်ဆောင်မှု ---
+    (
+        "🎫 [Ticket] လက်မှတ်ဝယ်ခ ဘယ်လောက်ကျမလဲ။",
+        "ရထားခရီးစဉ်နှင့် ထိုင်ခုံအတန်းအလိုက် လက်မှတ်ခ ကွာခြားပါသည်။",
+    ),
+    (
+        "🎫 [Ticket] ဘယ်နှရက်ကြိုပြီး ဝယ်လို့ရလဲ။",
+        "(၇) ရက်ကြိုတင်ဝယ်ယူနိုင်ပါသည်။ ကြားဘူတာမှ ခရီးစဉ်များအတွက်မူ (၅) ရက်ကြိုတင်ဝယ်ယူရပါသည်။",
+    ),
+    (
+        "🎫 [Ticket] ဘယ်ခရီးစဉ်တွေ ဝယ်ပေးလဲ။",
+        "ရန်ကုန် - နေပြည်တော် - မန္တလေး\nရန်ကုန် - မော်လမြိုင်",
+    ),
+    (
+        "🎫 [Ticket] လက်မှတ်ဝယ်ဖို့ ဘာအချက်အလက်တွေ ပေးရမလဲ။",
+        "အောက်ပါအချက်အလက်များကို ပေးပို့ပေးပါ —\n"
+        "• သွားမည့်သူများ၏ မှတ်ပုံတင်အမည်\n"
+        "• မှတ်ပုံတင်အမှတ်\n"
+        "• သွားမည့်ရက်စွဲနှင့် ခရီးစဉ် (ထွက်မည့်မြို့ → သွားမည့်မြို့)\n"
+        "• ဖုန်းနံပါတ်",
+    ),
+    (
+        "🎫 [Ticket] NRC (မှတ်ပုံတင်) မရှိရင် ဝယ်လို့ရလား။",
+        "Smart Card မူရင်း လိုအပ်ပါသည်။",
+    ),
+    (
+        "🎫 [Ticket] Passport နဲ့ ဝယ်လို့ရလား။",
+        "ရပါသည်။",
+    ),
+    (
+        "🎫 [Ticket] ငွေကို ဘယ်လိုလွှဲရမလဲ။",
+        "ဝယ်ယူမည့်နေ့တွင် လက်မှတ်ခကို KBZPay — 09956413316 (Nay Linn Htet) သို့ လွှဲပေးရပါသည်။",
+    ),
+    (
+        "🎫 [Ticket] ငွေလွှဲပြီးရင် ဘယ်လောက်ကြာမှ Ticket ရမလဲ။",
+        "လက်မှတ်ဝယ်ယူပြီးသည်နှင့် E-ticket ကို ချက်ချင်း ပေးပို့ပေးပါသည်။",
+    ),
+    (
+        "🎫 [Ticket] E-ticket ကို PDF ပေးလား။",
+        "PDF file နှင့် ပေးပို့ပေးပါသည်။",
+    ),
+    (
+        "🎫 [Ticket] Ticket ကို Cancel / Refund လုပ်လို့ရလား။",
+        "ဝယ်ယူပြီးသော လက်မှတ်များကို Cancel / Refund လုပ်၍ မရပါ။",
+    ),
+    (
+        "🎫 [Ticket] ရက်စွဲ ပြောင်းလို့ရလား။",
+        "Date ပြောင်း/ချိန်းလို့ မရပါ။",
+    ),
+    (
+        "🎫 [Ticket] လက်မှတ်ကုန်သွားရင် ဘယ်လိုလုပ်ရမလဲ။",
+        "လက်မှတ်ကုန်သွားပါက နောက်ကျန်ရှိသေးသည့် ရက်ကို ရွေးချယ်ဝယ်ယူရပါမည်။",
+    ),
+    (
+        "🎫 [Ticket] Train Time ကို စစ်ပေးလား။",
+        "စစ်ပေးပါသည်။",
+    ),
+    (
+        "🎫 [Ticket] ရထားထွက်ချိန်မတိုင်ခင် ဘယ်လောက်စောရောက်သင့်လဲ။",
+        "ရထားထွက်ချိန်ထက် တစ်နာရီခန့် စောစီးစွာ ရောက်ရှိသင့်ပါသည်။",
+    ),
+    # --- ယေဘုယျ ---
+    (
+        "✉️ လူတစ်ယောက်နှင့် ဘယ်လိုဆက်သွယ်ရမလဲ။",
+        "✉️ 'ဆက်သွယ်ရန်' ကိုနှိပ်ပါ၊ သို့မဟုတ် သင့်မေးခွန်းကို တိုက်ရိုက်ရိုက်ပို့ပါ — Admin က အမြန်ဆုံး ပြန်လည်ဖြေကြားပေးပါမည်။",
+    ),
 ]
 
 
@@ -117,10 +212,39 @@ async def find_faq_match(text: str) -> FAQ | None:
     return None
 
 
-# ---------------------------------------------------------------------------
-# Message forwarding: customer -> admins, admin -> customer
-# ---------------------------------------------------------------------------
+# FAQ categories
+# We don't add a DB column for this (the bot runs against a live Postgres DB
+# and that would need a migration). Instead we read the "[CV]" / "[Ticket]"
+# tag that's already part of each DEFAULT_FAQS question and group by that.
+FAQ_CATEGORY_LABELS: dict[str, str] = {
+    "CV": "📝 CV ရေးသားခြင်း မေးခွန်းများ",
+    "Ticket": "🎫 ရထားလက်မှတ် မေးခွန်းများ",
+    "General": "✉️ အထွေထွေ မေးခွန်းများ",
+}
 
+_CATEGORY_TAG_RE = re.compile(r"\[(\w+)\]")
+
+
+def faq_category(question: str) -> str:
+    """Extract the category tag (e.g. 'CV', 'Ticket') from a FAQ question, defaulting to 'General'."""
+    match = _CATEGORY_TAG_RE.search(question)
+    if match and match.group(1) in FAQ_CATEGORY_LABELS:
+        return match.group(1)
+    return "General"
+
+
+async def list_faq_categories() -> list[str]:
+    """Distinct categories present in the FAQ table, in the order FAQ_CATEGORY_LABELS defines."""
+    faqs = await list_faqs()
+    present = {faq_category(faq.question) for faq in faqs}
+    return [cat for cat in FAQ_CATEGORY_LABELS if cat in present]
+
+
+async def list_faqs_by_category(category: str) -> list[FAQ]:
+    faqs = await list_faqs()
+    return [faq for faq in faqs if faq_category(faq.question) == category]
+
+# Message forwarding: customer -> admins, admin -> customer
 async def save_message(user_id: int, sender: str, text: str) -> None:
     async with get_session() as session:
         session.add(Message(user_id=user_id, sender=sender, text=text))
@@ -199,11 +323,7 @@ async def route_admin_reply(bot: Bot, admin_chat_id: int, reply_to_message_id: i
 
     return True
 
-
-# ---------------------------------------------------------------------------
 # Broadcast
-# ---------------------------------------------------------------------------
-
 async def broadcast_message(bot: Bot, text: str) -> int:
     """Sends `text` to every non-banned user. Returns number of successful sends."""
     users = await list_all_users()
@@ -223,11 +343,7 @@ async def broadcast_message(bot: Bot, text: str) -> int:
 
     return sent
 
-
-# ---------------------------------------------------------------------------
 # Retention / cleanup
-# ---------------------------------------------------------------------------
-
 async def cleanup_old_data(retention_days: int = MESSAGE_RETENTION_DAYS) -> None:
     """Deletes messages, forward-map entries, and broadcast logs older than N days."""
     cutoff = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=retention_days)
