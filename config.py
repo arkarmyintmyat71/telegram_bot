@@ -23,7 +23,7 @@ def _require(name: str) -> str:
 
 
 # --- Telegram ---------------------------------------------------------
-BOT_TOKEN: str = _require("BOT_TOKEN", "8829138453:AAHs_3LbbtASNXsr_9oV4cWZPXTYwXScGB4")
+BOT_TOKEN: str = _require("BOT_TOKEN")
 
 # Comma-separated list of admin Telegram user IDs, e.g. "123456789,987654321"
 _admin_ids_raw = os.getenv("ADMIN_IDS", "1678659382")
